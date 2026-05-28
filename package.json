@@ -1,0 +1,55 @@
+{
+  "name": "codegraph-insight",
+  "version": "1.0.0",
+  "description": "🚀 智能代码知识图谱分析工具 - 将任何代码库转换为交互式知识图谱",
+  "main": "dist/index.js",
+  "bin": {
+    "codegraph": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node src/cli.ts",
+    "start": "node dist/cli.js",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "code-analysis",
+    "knowledge-graph",
+    "code-visualization",
+    "ast",
+    "developer-tools",
+    "code-insight"
+  ],
+  "author": "CodeGraph Team",
+  "license": "MIT",
+  "dependencies": {
+    "@babel/parser": "^7.24.0",
+    "@babel/traverse": "^7.24.0",
+    "@babel/types": "^7.24.0",
+    "commander": "^12.0.0",
+    "express": "^4.19.0",
+    "glob": "^10.3.0",
+    "typescript": "^5.4.0",
+    "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "@types/babel__traverse": "^7.20.0",
+    "@types/express": "^4.17.0",
+    "@types/node": "^20.11.0",
+    "@types/ws": "^8.5.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0",
+    "jest": "^29.7.0",
+    "ts-node": "^10.9.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/codegraph-insight.git"
+  }
+}
