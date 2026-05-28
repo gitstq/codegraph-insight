@@ -55,565 +55,124 @@ class Visualizer:
     def _generate_html_content(self, graph_data: Dict, stats: Dict) -> str:
         """Generate complete HTML content with embedded D3.js."""
         
-        html_template = '''<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CodeGraph-Insight Visualization</title>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: #fff;
-            overflow: hidden;
-        }
-        
-        #container {
-            display: flex;
-            height: 100vh;
-        }
-        
-        #sidebar {
-            width: 320px;
-            background: rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(10px);
-            padding: 20px;
-            overflow-y: auto;
-            border-right: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        #graph-container {
-            flex: 1;
-            position: relative;
-        }
-        
-        h1 {
-            font-size: 1.5rem;
-            margin-bottom: 10px;
-            background: linear-gradient(90deg, #4A90E2, #F5A623);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .subtitle {
-            font-size: 0.85rem;
-            color: #888;
-            margin-bottom: 20px;
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        
-        .stat-card {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
-        }
-        
-        .stat-value {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #4A90E2;
-        }
-        
-        .stat-label {
-            font-size: 0.75rem;
-            color: #888;
-            text-transform: uppercase;
-        }
-        
-        .legend {
-            margin-top: 20px;
-        }
-        
-        .legend-title {
-            font-size: 0.9rem;
-            margin-bottom: 10px;
-            color: #ccc;
-        }
-        
-        .legend-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 8px;
-            font-size: 0.85rem;
-        }
-        
-        .legend-color {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            margin-right: 10px;
-        }
-        
-        #search-box {
-            width: 100%;
-            padding: 10px 15px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.05);
-            color: #fff;
-            font-size: 0.9rem;
-            margin-bottom: 15px;
-        }
-        
-        #search-box:focus {
-            outline: none;
-            border-color: #4A90E2;
-        }
-        
-        #search-box::placeholder {
-            color: #666;
-        }
-        
-        .controls {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .control-btn {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 8px;
-            border: none;
-            border-radius: 6px;
-            background: rgba(74, 144, 226, 0.2);
-            color: #4A90E2;
-            cursor: pointer;
-            font-size: 0.85rem;
-            transition: all 0.3s;
-        }
-        
-        .control-btn:hover {
-            background: rgba(74, 144, 226, 0.4);
-        }
-        
-        #tooltip {
-            position: absolute;
-            padding: 12px;
-            background: rgba(0, 0, 0, 0.9);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.2s;
-            max-width: 300px;
-            z-index: 1000;
-        }
-        
-        #tooltip h4 {
-            margin-bottom: 5px;
-            color: #4A90E2;
-        }
-        
-        #tooltip p {
-            font-size: 0.8rem;
-            color: #ccc;
-            margin: 3px 0;
-        }
-        
-        svg {
-            width: 100%;
-            height: 100%;
-        }
-        
-        .node {
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .node:hover {
-            filter: brightness(1.3);
-        }
-        
-        .link {
-            stroke-opacity: 0.4;
-            transition: all 0.3s;
-        }
-        
-        .node-label {
-            font-size: 10px;
-            fill: #fff;
-            pointer-events: none;
-            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
-        }
-        
-        .node-label-bg {
-            fill: rgba(0, 0, 0, 0.6);
-        }
-        
-        .info-panel {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(10px);
-            padding: 15px;
-            border-radius: 10px;
-            max-width: 300px;
-            max-height: 300px;
-            overflow-y: auto;
-            display: none;
-        }
-        
-        .info-panel.active {
-            display: block;
-        }
-        
-        .info-panel h4 {
-            margin-bottom: 10px;
-            color: #4A90E2;
-        }
-        
-        .info-panel p {
-            font-size: 0.8rem;
-            color: #ccc;
-            margin: 5px 0;
-        }
-        
-        .zoom-controls {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            display: flex;
-            gap: 5px;
-        }
-        
-        .zoom-btn {
-            width: 36px;
-            height: 36px;
-            border: none;
-            border-radius: 8px;
-            background: rgba(0, 0, 0, 0.6);
-            color: #fff;
-            cursor: pointer;
-            font-size: 1.2rem;
-            transition: all 0.3s;
-        }
-        
-        .zoom-btn:hover {
-            background: rgba(74, 144, 226, 0.6);
-        }
-    </style>
-</head>
-<body>
-    <div id="container">
-        <div id="sidebar">
-            <h1>🔍 CodeGraph-Insight</h1>
-            <p class="subtitle">Interactive Code Knowledge Graph</p>
-            
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-value">{total_nodes}</div>
-                    <div class="stat-label">Nodes</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">{total_edges}</div>
-                    <div class="stat-label">Edges</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">{total_files}</div>
-                    <div class="stat-label">Files</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">{languages}</div>
-                    <div class="stat-label">Languages</div>
-                </div>
-            </div>
-            
-            <input type="text" id="search-box" placeholder="🔍 Search nodes...">
-            
-            <div class="legend">
-                <div class="legend-title">Node Types</div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: #4A90E2;"></div>
-                    <span>Module</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: #F5A623;"></div>
-                    <span>Class</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: #7ED321;"></div>
-                    <span>Function</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: #BD10E0;"></div>
-                    <span>Method</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: #50E3C2;"></div>
-                    <span>Import</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: #9013FE;"></div>
-                    <span>Variable</span>
-                </div>
-            </div>
-            
-            <div class="controls">
-                <button class="control-btn" onclick="resetZoom()">🔄 Reset View</button>
-                <button class="control-btn" onclick="togglePhysics()">⚡ Toggle Physics</button>
-                <button class="control-btn" onclick="exportData()">💾 Export Data</button>
-            </div>
-        </div>
-        
-        <div id="graph-container">
-            <svg id="graph"></svg>
-            <div id="tooltip"></div>
-            <div id="info-panel" class="info-panel">
-                <h4>Node Details</h4>
-                <div id="info-content"></div>
-            </div>
-            <div class="zoom-controls">
-                <button class="zoom-btn" onclick="zoomIn()">+</button>
-                <button class="zoom-btn" onclick="zoomOut()">−</button>
-            </div>
-        </div>
-    </div>
-    
-    <script>
-        // Graph data
-        const graphData = {graph_data_json};
-        
-        // Setup SVG
-        const container = document.getElementById('graph-container');
-        const width = container.clientWidth;
-        const height = container.clientHeight;
-        
-        const svg = d3.select('#graph')
-            .attr('viewBox', [0, 0, width, height]);
-        
-        // Add zoom behavior
-        const g = svg.append('g');
-        
-        const zoom = d3.zoom()
-            .scaleExtent([0.1, 4])
-            .on('zoom', (event) => {
-                g.attr('transform', event.transform);
-            });
-        
-        svg.call(zoom);
-        
-        // Create force simulation
-        let simulation = d3.forceSimulation(graphData.nodes)
-            .force('link', d3.forceLink(graphData.links).id(d => d.id).distance(100))
-            .force('charge', d3.forceManyBody().strength(-300))
-            .force('center', d3.forceCenter(width / 2, height / 2))
-            .force('collision', d3.forceCollide().radius(d => d.radius + 10));
-        
-        // Create links
-        const link = g.append('g')
-            .attr('class', 'links')
-            .selectAll('line')
-            .data(graphData.links)
-            .join('line')
-            .attr('class', 'link')
-            .attr('stroke', '#999')
-            .attr('stroke-width', 1.5);
-        
-        // Create nodes
-        const node = g.append('g')
-            .attr('class', 'nodes')
-            .selectAll('circle')
-            .data(graphData.nodes)
-            .join('circle')
-            .attr('class', 'node')
-            .attr('r', d => d.radius)
-            .attr('fill', d => d.color)
-            .attr('stroke', '#fff')
-            .attr('stroke-width', 1.5)
-            .call(d3.drag()
-                .on('start', dragstarted)
-                .on('drag', dragged)
-                .on('end', dragended));
-        
-        // Add labels
-        const labels = g.append('g')
-            .attr('class', 'labels')
-            .selectAll('text')
-            .data(graphData.nodes)
-            .join('text')
-            .attr('class', 'node-label')
-            .attr('text-anchor', 'middle')
-            .attr('dy', d => d.radius + 12)
-            .text(d => d.name.length > 20 ? d.name.substring(0, 20) + '...' : d.name)
-            .style('opacity', d => d.radius > 8 ? 1 : 0);
-        
-        // Tooltip
-        const tooltip = d3.select('#tooltip');
-        
-        node.on('mouseover', function(event, d) {{
-            tooltip.style('opacity', 1)
-                .html(`
-                    <h4>${{d.name}}</h4>
-                    <p><strong>Type:</strong> ${{d.type}}</p>
-                    <p><strong>File:</strong> ${{d.file}}</p>
-                    <p><strong>Line:</strong> ${{d.line}}</p>
-                `)
-                .style('left', (event.pageX + 10) + 'px')
-                .style('top', (event.pageY - 10) + 'px');
-        }})
-        .on('mouseout', function() {{
-            tooltip.style('opacity', 0);
-        }})
-        .on('click', function(event, d) {{
-            showNodeInfo(d);
-        }});
-        
-        // Update positions
-        simulation.on('tick', () => {{
-            link
-                .attr('x1', d => d.source.x)
-                .attr('y1', d => d.source.y)
-                .attr('x2', d => d.target.x)
-                .attr('y2', d => d.target.y);
-            
-            node
-                .attr('cx', d => d.x)
-                .attr('cy', d => d.y);
-            
-            labels
-                .attr('x', d => d.x)
-                .attr('y', d => d.y);
-        }});
-        
-        // Drag functions
-        function dragstarted(event, d) {{
-            if (!event.active) simulation.alphaTarget(0.3).restart();
-            d.fx = d.x;
-            d.fy = d.y;
-        }}
-        
-        function dragged(event, d) {{
-            d.fx = event.x;
-            d.fy = event.y;
-        }}
-        
-        function dragended(event, d) {{
-            if (!event.active) simulation.alphaTarget(0);
-            d.fx = null;
-            d.fy = null;
-        }}
-        
-        // Search functionality
-        document.getElementById('search-box').addEventListener('input', function(e) {{
-            const query = e.target.value.toLowerCase();
-            
-            node.style('opacity', d => {{
-                if (!query) return 1;
-                return d.name.toLowerCase().includes(query) ? 1 : 0.1;
-            }});
-            
-            link.style('opacity', d => {{
-                if (!query) return 0.4;
-                const sourceMatch = d.source.name.toLowerCase().includes(query);
-                const targetMatch = d.target.name.toLowerCase().includes(query);
-                return (sourceMatch || targetMatch) ? 0.6 : 0.05;
-            }});
-            
-            labels.style('opacity', d => {{
-                if (!query) return d.radius > 8 ? 1 : 0;
-                return d.name.toLowerCase().includes(query) ? 1 : 0;
-            }});
-        }});
-        
-        // Control functions
-        function resetZoom() {{
-            svg.transition().duration(750).call(
-                zoom.transform,
-                d3.zoomIdentity
-            );
-        }}
-        
-        let physicsEnabled = true;
-        function togglePhysics() {{
-            physicsEnabled = !physicsEnabled;
-            if (physicsEnabled) {{
-                simulation.restart();
-            }} else {{
-                simulation.stop();
-            }}
-        }}
-        
-        function zoomIn() {{
-            svg.transition().duration(300).call(zoom.scaleBy, 1.3);
-        }}
-        
-        function zoomOut() {{
-            svg.transition().duration(300).call(zoom.scaleBy, 0.7);
-        }}
-        
-        function showNodeInfo(d) {{
-            const panel = document.getElementById('info-panel');
-            const content = document.getElementById('info-content');
-            
-            content.innerHTML = `
-                <p><strong>Name:</strong> ${{d.name}}</p>
-                <p><strong>Type:</strong> ${{d.type}}</p>
-                <p><strong>File:</strong> ${{d.file}}</p>
-                <p><strong>Line:</strong> ${{d.line}}</p>
-                ${{d.metadata ? `<p><strong>Metadata:</strong> ${{JSON.stringify(d.metadata, null, 2)}}</p>` : ''}}
-            `;
-            
-            panel.classList.add('active');
-        }}
-        
-        function exportData() {{
-            const dataStr = JSON.stringify(graphData, null, 2);
-            const blob = new Blob([dataStr], {{type: 'application/json'}});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'codegraph-data.json';
-            a.click();
-            URL.revokeObjectURL(url);
-        }}
-        
-        // Close info panel on background click
-        svg.on('click', function(event) {{
-            if (event.target.tagName === 'svg') {{
-                document.getElementById('info-panel').classList.remove('active');
-            }}
-        }});
-    </script>
-</body>
-</html>'''
-        
         # Format statistics
         total_nodes = stats.get('total_nodes', 0)
         total_edges = stats.get('total_edges', 0)
         total_files = stats.get('total_files', 0)
         languages = len(stats.get('languages', []))
         
-        # Escape and embed graph data
-        graph_data_json = json.dumps(graph_data, ensure_ascii=False)
+        html_parts = []
+        html_parts.append('<!DOCTYPE html>')
+        html_parts.append('<html lang="en">')
+        html_parts.append('<head>')
+        html_parts.append('    <meta charset="UTF-8">')
+        html_parts.append('    <meta name="viewport" content="width=device-width, initial-scale=1.0">')
+        html_parts.append('    <title>CodeGraph-Insight Visualization</title>')
+        html_parts.append('    <script src="https://d3js.org/d3.v7.min.js"></script>')
+        html_parts.append('    <style>')
+        html_parts.append('        * { margin: 0; padding: 0; box-sizing: border-box; }')
+        html_parts.append('        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: #fff; overflow: hidden; }')
+        html_parts.append('        #container { display: flex; height: 100vh; }')
+        html_parts.append('        #sidebar { width: 320px; background: rgba(0, 0, 0, 0.3); backdrop-filter: blur(10px); padding: 20px; overflow-y: auto; border-right: 1px solid rgba(255, 255, 255, 0.1); }')
+        html_parts.append('        #graph-container { flex: 1; position: relative; }')
+        html_parts.append('        h1 { font-size: 1.5rem; margin-bottom: 10px; background: linear-gradient(90deg, #4A90E2, #F5A623); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }')
+        html_parts.append('        .subtitle { font-size: 0.85rem; color: #888; margin-bottom: 20px; }')
+        html_parts.append('        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }')
+        html_parts.append('        .stat-card { background: rgba(255, 255, 255, 0.05); padding: 12px; border-radius: 8px; text-align: center; }')
+        html_parts.append('        .stat-value { font-size: 1.5rem; font-weight: bold; color: #4A90E2; }')
+        html_parts.append('        .stat-label { font-size: 0.75rem; color: #888; text-transform: uppercase; }')
+        html_parts.append('        .legend { margin-top: 20px; }')
+        html_parts.append('        .legend-title { font-size: 0.9rem; margin-bottom: 10px; color: #ccc; }')
+        html_parts.append('        .legend-item { display: flex; align-items: center; margin-bottom: 8px; font-size: 0.85rem; }')
+        html_parts.append('        .legend-color { width: 16px; height: 16px; border-radius: 50%; margin-right: 10px; }')
+        html_parts.append('        #search-box { width: 100%; padding: 10px 15px; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; background: rgba(255, 255, 255, 0.05); color: #fff; font-size: 0.9rem; margin-bottom: 15px; }')
+        html_parts.append('        #search-box:focus { outline: none; border-color: #4A90E2; }')
+        html_parts.append('        .controls { margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.1); }')
+        html_parts.append('        .control-btn { width: 100%; padding: 10px; margin-bottom: 8px; border: none; border-radius: 6px; background: rgba(74, 144, 226, 0.2); color: #4A90E2; cursor: pointer; font-size: 0.85rem; transition: all 0.3s; }')
+        html_parts.append('        .control-btn:hover { background: rgba(74, 144, 226, 0.4); }')
+        html_parts.append('        #tooltip { position: absolute; padding: 12px; background: rgba(0, 0, 0, 0.9); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; pointer-events: none; opacity: 0; transition: opacity 0.2s; max-width: 300px; z-index: 1000; }')
+        html_parts.append('        svg { width: 100%; height: 100%; }')
+        html_parts.append('        .node { cursor: pointer; }')
+        html_parts.append('        .node:hover { filter: brightness(1.3); }')
+        html_parts.append('        .link { stroke-opacity: 0.4; }')
+        html_parts.append('        .node-label { font-size: 10px; fill: #fff; pointer-events: none; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8); }')
+        html_parts.append('        .info-panel { position: absolute; bottom: 20px; right: 20px; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(10px); padding: 15px; border-radius: 10px; max-width: 300px; max-height: 300px; overflow-y: auto; display: none; }')
+        html_parts.append('        .info-panel.active { display: block; }')
+        html_parts.append('        .zoom-controls { position: absolute; bottom: 20px; left: 20px; display: flex; gap: 5px; }')
+        html_parts.append('        .zoom-btn { width: 36px; height: 36px; border: none; border-radius: 8px; background: rgba(0, 0, 0, 0.6); color: #fff; cursor: pointer; font-size: 1.2rem; }')
+        html_parts.append('    </style>')
+        html_parts.append('</head>')
+        html_parts.append('<body>')
+        html_parts.append('    <div id="container">')
+        html_parts.append('        <div id="sidebar">')
+        html_parts.append('            <h1>CodeGraph-Insight</h1>')
+        html_parts.append('            <p class="subtitle">Interactive Code Knowledge Graph</p>')
+        html_parts.append('            <div class="stats-grid">')
+        html_parts.append('                <div class="stat-card"><div class="stat-value">' + str(total_nodes) + '</div><div class="stat-label">Nodes</div></div>')
+        html_parts.append('                <div class="stat-card"><div class="stat-value">' + str(total_edges) + '</div><div class="stat-label">Edges</div></div>')
+        html_parts.append('                <div class="stat-card"><div class="stat-value">' + str(total_files) + '</div><div class="stat-label">Files</div></div>')
+        html_parts.append('                <div class="stat-card"><div class="stat-value">' + str(languages) + '</div><div class="stat-label">Languages</div></div>')
+        html_parts.append('            </div>')
+        html_parts.append('            <input type="text" id="search-box" placeholder="Search nodes...">')
+        html_parts.append('            <div class="legend">')
+        html_parts.append('                <div class="legend-title">Node Types</div>')
+        html_parts.append('                <div class="legend-item"><div class="legend-color" style="background: #4A90E2;"></div><span>Module</span></div>')
+        html_parts.append('                <div class="legend-item"><div class="legend-color" style="background: #F5A623;"></div><span>Class</span></div>')
+        html_parts.append('                <div class="legend-item"><div class="legend-color" style="background: #7ED321;"></div><span>Function</span></div>')
+        html_parts.append('                <div class="legend-item"><div class="legend-color" style="background: #BD10E0;"></div><span>Method</span></div>')
+        html_parts.append('                <div class="legend-item"><div class="legend-color" style="background: #50E3C2;"></div><span>Import</span></div>')
+        html_parts.append('            </div>')
+        html_parts.append('            <div class="controls">')
+        html_parts.append('                <button class="control-btn" onclick="resetZoom()">Reset View</button>')
+        html_parts.append('                <button class="control-btn" onclick="togglePhysics()">Toggle Physics</button>')
+        html_parts.append('                <button class="control-btn" onclick="exportData()">Export Data</button>')
+        html_parts.append('            </div>')
+        html_parts.append('        </div>')
+        html_parts.append('        <div id="graph-container">')
+        html_parts.append('            <svg id="graph"></svg>')
+        html_parts.append('            <div id="tooltip"></div>')
+        html_parts.append('            <div id="info-panel" class="info-panel"><h4>Node Details</h4><div id="info-content"></div></div>')
+        html_parts.append('            <div class="zoom-controls"><button class="zoom-btn" onclick="zoomIn()">+</button><button class="zoom-btn" onclick="zoomOut()">-</button></div>')
+        html_parts.append('        </div>')
+        html_parts.append('    </div>')
+        html_parts.append('    <script>')
+        html_parts.append('        const graphData = ' + json.dumps(graph_data, ensure_ascii=False) + ';')
+        html_parts.append('        const container = document.getElementById("graph-container");')
+        html_parts.append('        const width = container.clientWidth;')
+        html_parts.append('        const height = container.clientHeight;')
+        html_parts.append('        const svg = d3.select("#graph").attr("viewBox", [0, 0, width, height]);')
+        html_parts.append('        const g = svg.append("g");')
+        html_parts.append('        const zoom = d3.zoom().scaleExtent([0.1, 4]).on("zoom", (e) => g.attr("transform", e.transform));')
+        html_parts.append('        svg.call(zoom);')
+        html_parts.append('        let simulation = d3.forceSimulation(graphData.nodes)')
+        html_parts.append('            .force("link", d3.forceLink(graphData.links).id(d => d.id).distance(100))')
+        html_parts.append('            .force("charge", d3.forceManyBody().strength(-300))')
+        html_parts.append('            .force("center", d3.forceCenter(width / 2, height / 2))')
+        html_parts.append('            .force("collision", d3.forceCollide().radius(d => d.radius + 10));')
+        html_parts.append('        const link = g.append("g").selectAll("line").data(graphData.links).join("line").attr("class", "link").attr("stroke", "#999").attr("stroke-width", 1.5);')
+        html_parts.append('        const node = g.append("g").selectAll("circle").data(graphData.nodes).join("circle").attr("class", "node").attr("r", d => d.radius).attr("fill", d => d.color).attr("stroke", "#fff").attr("stroke-width", 1.5).call(d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended));')
+        html_parts.append('        const labels = g.append("g").selectAll("text").data(graphData.nodes).join("text").attr("class", "node-label").attr("text-anchor", "middle").attr("dy", d => d.radius + 12).text(d => d.name.length > 20 ? d.name.substring(0, 20) + "..." : d.name).style("opacity", d => d.radius > 8 ? 1 : 0);')
+        html_parts.append('        const tooltip = d3.select("#tooltip");')
+        html_parts.append('        node.on("mouseover", function(event, d) { tooltip.style("opacity", 1).html("<h4>" + d.name + "</h4><p><strong>Type:</strong> " + d.type + "</p><p><strong>File:</strong> " + d.file + "</p><p><strong>Line:</strong> " + d.line + "</p>").style("left", (event.pageX + 10) + "px").style("top", (event.pageY - 10) + "px"); })')
+        html_parts.append('            .on("mouseout", function() { tooltip.style("opacity", 0); })')
+        html_parts.append('            .on("click", function(event, d) { showNodeInfo(d); });')
+        html_parts.append('        simulation.on("tick", () => { link.attr("x1", d => d.source.x).attr("y1", d => d.source.y).attr("x2", d => d.target.x).attr("y2", d => d.target.y); node.attr("cx", d => d.x).attr("cy", d => d.y); labels.attr("x", d => d.x).attr("y", d => d.y); });')
+        html_parts.append('        function dragstarted(event, d) { if (!event.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; }')
+        html_parts.append('        function dragged(event, d) { d.fx = event.x; d.fy = event.y; }')
+        html_parts.append('        function dragended(event, d) { if (!event.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; }')
+        html_parts.append('        document.getElementById("search-box").addEventListener("input", function(e) { const query = e.target.value.toLowerCase(); node.style("opacity", d => !query ? 1 : d.name.toLowerCase().includes(query) ? 1 : 0.1); link.style("opacity", d => !query ? 0.4 : (d.source.name.toLowerCase().includes(query) || d.target.name.toLowerCase().includes(query)) ? 0.6 : 0.05); labels.style("opacity", d => !query ? (d.radius > 8 ? 1 : 0) : d.name.toLowerCase().includes(query) ? 1 : 0); });')
+        html_parts.append('        function resetZoom() { svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity); }')
+        html_parts.append('        let physicsEnabled = true; function togglePhysics() { physicsEnabled = !physicsEnabled; if (physicsEnabled) simulation.restart(); else simulation.stop(); }')
+        html_parts.append('        function zoomIn() { svg.transition().duration(300).call(zoom.scaleBy, 1.3); }')
+        html_parts.append('        function zoomOut() { svg.transition().duration(300).call(zoom.scaleBy, 0.7); }')
+        html_parts.append('        function showNodeInfo(d) { const panel = document.getElementById("info-panel"); const content = document.getElementById("info-content"); content.innerHTML = "<p><strong>Name:</strong> " + d.name + "</p><p><strong>Type:</strong> " + d.type + "</p><p><strong>File:</strong> " + d.file + "</p><p><strong>Line:</strong> " + d.line + "</p>" + (d.metadata ? "<p><strong>Metadata:</strong> " + JSON.stringify(d.metadata, null, 2) + "</p>" : ""); panel.classList.add("active"); }')
+        html_parts.append('        function exportData() { const dataStr = JSON.stringify(graphData, null, 2); const blob = new Blob([dataStr], {type: "application/json"}); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "codegraph-data.json"; a.click(); URL.revokeObjectURL(url); }')
+        html_parts.append('        svg.on("click", function(event) { if (event.target.tagName === "svg") document.getElementById("info-panel").classList.remove("active"); });')
+        html_parts.append('    </script>')
+        html_parts.append('</body>')
+        html_parts.append('</html>')
         
-        # Fill template
-        html = html_template.format(
-            total_nodes=total_nodes,
-            total_edges=total_edges,
-            total_files=total_files,
-            languages=languages,
-            graph_data_json=graph_data_json
-        )
-        
-        return html
+        return '\n'.join(html_parts)
     
     def open_in_browser(self, html_path: str) -> None:
         """Open visualization in default browser."""
